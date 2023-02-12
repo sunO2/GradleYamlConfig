@@ -31,14 +31,13 @@ class YamlConfigPlugin: Plugin<Project> {
         project.childProjects.forEach {
             val childProject = it.value
             childProject.extensions.add(APPConfig::class.java, "appConfig", appConfig.app)
-            childProject.afterEvaluate {
-                println("哈哈哈${it.name}")
-                val andorid = childProject.extensions.getByName("android") as BaseAppModuleExtension
-                println("哈哈哈${andorid.javaClass.simpleName}")
-            }
+            childProject.plugins.apply("com.hezhihu89.yamlTest")
         }
     }
 }
+
+
+
 
 open class ReadYamlTask: DefaultTask() {
 
