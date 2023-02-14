@@ -3,6 +3,9 @@ import org.gradle.api.initialization.resolve.RepositoriesMode
 pluginManagement {
     includeBuild('./yamlconfig')
     repositories {
+        mavenLocal{
+            url = "${rootProject.projectDir}/localRepo"
+        }
         gradlePluginPortal()
         google()
         mavenCentral()
@@ -16,12 +19,13 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        mavenLocal{
+            url = "${rootProject.projectDir}/localRepo"
+        }
         google()
         gradlePluginPortal()
         mavenCentral()
     }
 }
-
 rootProject.name = "Demo"
 include ':app'
-

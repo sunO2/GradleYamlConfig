@@ -53,11 +53,6 @@ gradlePlugin {
         implementationClass = "com.hezhihu89.config.YamlConfigPlugin"
     }
 
-    val test by plugins.creating {
-        id = "com.hezhihu89.yamlTest"
-        implementationClass = "com.hezhihu89.TestPlugin"
-    }
-
 }
 
 // Add a source set for the functional test suite

@@ -3,15 +3,17 @@
  */
 package com.hezhihu89.config
 
-import com.android.build.gradle.AppExtension
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
-import com.hezhihu89.config.ReadYamlTask.Companion.TASK_GROUP
 import com.hezhihu89.module.APPConfig
 import com.hezhihu89.module.App
-import com.hezhihu89.utils.YLog.log
+import com.hezhihu89.module.IncludeModules
+import com.hezhihu89.utils.VersionContain
 import com.hezhihu89.utils.YamlUtils
+import com.hezhihu89.utils.publishing
+import com.hezhihu89.utils.publishingConfig
 import org.gradle.api.*
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.publish.maven.MavenPublication
+import java.util.Properties
+
 
 /**
  * A simple 'hello world' plugin.
@@ -20,45 +22,128 @@ class YamlConfigPlugin: Plugin<Project> {
 
     override fun apply(project: Project) {
         // Register a task
-        val appConfig = YamlUtils.getAppConfig(project)
+        val rootDir = project.rootProject.projectDir
+        val appConfig: App = YamlUtils.getAppConfig(project)
+        appConfig.app.mApp = appConfig
+
         project.extensions.add(App::class.java,"app",appConfig)
         project.extensions.add(APPConfig::class.java,"appConfig",appConfig.app)
-        project.tasks.create("readYaml",ReadYamlTask::class.java){
-            it.group = TASK_GROUP
-            it.description = "用于适配task"
-            project.tasks.getByName("prepareKotlinBuildScriptModel").dependsOn(it)
-        }
-        project.childProjects.forEach {
-            val childProject = it.value
-            childProject.extensions.add(APPConfig::class.java, "appConfig", appConfig.app)
-            childProject.plugins.apply("com.hezhihu89.yamlTest")
+
+
+        project.subprojects.forEach { subProject ->
+            subProject.addAppConfigExtensions(appConfig.app)
+            subProject.replaceModule2Library(appConfig)
+            subProject.addMavenPlugin()
         }
     }
-}
 
+    /***
+     * 配置 添加Maven 插件
+     */
+    private fun Project.addMavenPlugin(){
+        val versionPropertiesFile = file(VersionContain.LIBRARY_VERSION_FILE)
+        if(!versionPropertiesFile.exists()){ return }
+        val inputStream = versionPropertiesFile.inputStream()
+        val versionProperties = Properties()
+        try {
+            versionProperties.load(inputStream)
+        }catch (e: Exception){
+            e.printStackTrace()
+            return
+        }finally {
+            inputStream.close()
+        }
+        apply {
+            it.plugin("maven-publish")
+            afterEvaluate {
+                it.publishing {
+                    singleVariant("debug"){
+                        withSourcesJar()
+                    }
+                    singleVariant("release"){
+                        withSourcesJar()
+                    }
+                }
+               afterEvaluate { pg ->
+                   pg.publishingConfig {
+                       it.repositories {
+                          it.maven {
+                              it.name = "appLocal"
+                              it.setUrl("${rootProject.projectDir}/localRepo")
+                          }
+                       }
+                       it.publications { contain ->
+                           val DEBUG = "debug"
+                           val RELEALSE = "release"
 
+                           val group = versionProperties.getProperty(VersionContain.LIBRARY_GROUP)
+                           val name = versionProperties.getProperty(VersionContain.LIBRARY_NAME)
+                           val version = versionProperties.getProperty(VersionContain.LIBRARY_VERSION)
 
-
-open class ReadYamlTask: DefaultTask() {
-
-    companion object {
-        const val TASK_GROUP = "yaml config"
+                           val release = contain.create(RELEALSE, MavenPublication::class.java){ mv ->
+                               afterEvaluate{
+                                   mv.from(components.findByName(RELEALSE))
+                               }
+                               mv.groupId = group
+                               mv.artifactId = name
+                               mv.version = version
+                           }
+                           val debug = contain.create(DEBUG, MavenPublication::class.java){ mv ->
+                               afterEvaluate{
+                                   mv.from(components.findByName(DEBUG))
+                               }
+                               mv.groupId = group
+                               mv.artifactId = name
+                               mv.version = "${version}-SNAPSHOT"
+                           }
+                       }
+                   }
+               }
+            }
+        }
     }
 
-    init {
-        doFirst {
-            log.d("doFirst","ReadYamlTask")
-        }
 
-        doLast {
-            log.d("doLast","ReadYamlTask")
-        }
 
+    private fun Project.replaceModule2Library(app: App) {
+        afterEvaluate {
+            val includeLibrary: Map<String,IncludeModules> = app.library
+            it.configurations.all { cf ->
+                cf.resolutionStrategy.dependencySubstitution{ dss ->
+                    includeLibrary.forEach{ libs ->
+                        val group = libs.key
+                        val modules = libs.value
+                        modules.modules.forEach { mod ->
+                            val libmod = mod.key
+                            val rowModule = dss.module("$group:$libmod")
+                            val replaceLibrary = dss.project(":${modules.path}:$libmod")
+                            dss.substitute(rowModule).using(replaceLibrary)
+                        }
+                    }
+//                    dss.all { ds ->
+//                        val dsreq = ds.requested
+//                        if(dsreq is DefaultModuleComponentSelector){
+//                            if(includeLibrary.containsLibrary(dsreq.group,dsreq.module)){
+//                                includeLibrary[dsreq.group]?.apply {
+//                                    val path1 = this.path
+//                                    this.modules[dsreq.module]?.apply {
+//                                        val path2 = this.path
+//                                        val project= dss.project(":$path1:$path2")
+//                                        val rowModule = dss.module("${dsreq.group}:${dsreq.module}")
+//                                        println("-------$rowModule \n     ------ $project")
+//                                        dss.substitute(rowModule).using(project)
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+                }
+            }
+        }
     }
 
-    @TaskAction
-    fun doAction(){
-        log.d("doActions： ","ReadYamlTask")
+    private fun Project.addAppConfigExtensions(appConfig: APPConfig){
+        extensions.add(APPConfig::class.java, "appConfig", appConfig)
     }
 
 }

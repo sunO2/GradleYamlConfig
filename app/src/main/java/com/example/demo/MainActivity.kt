@@ -12,5 +12,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.text1).apply {
            text = "CPU: ${Runtime.getRuntime().availableProcessors()}"
         }
+        val activity = com.hezhihu89.module1.MainActivity()
+        val activit2 = com.hezhihu89.module2.MainActivity()
     }
 }
