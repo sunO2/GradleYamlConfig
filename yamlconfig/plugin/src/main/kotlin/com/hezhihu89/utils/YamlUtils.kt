@@ -42,3 +42,6 @@ object VersionContain {
     const val LIBRARY_VERSION = "libraryVersion"
 }
 
+object TaskContain {
+    const val TASK_GROUP = "yamlConfig"
+}

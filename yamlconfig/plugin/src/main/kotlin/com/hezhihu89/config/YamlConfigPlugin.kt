@@ -6,6 +6,7 @@ package com.hezhihu89.config
 import com.hezhihu89.module.APPConfig
 import com.hezhihu89.module.App
 import com.hezhihu89.module.IncludeModules
+import com.hezhihu89.task.MavenPublishingTask
 import com.hezhihu89.utils.VersionContain
 import com.hezhihu89.utils.YamlUtils
 import com.hezhihu89.utils.publishing
@@ -98,6 +99,7 @@ class YamlConfigPlugin: Plugin<Project> {
                            }
                        }
                    }
+                   MavenPublishingTask.create(this)
                }
             }
         }
@@ -120,23 +122,6 @@ class YamlConfigPlugin: Plugin<Project> {
                             dss.substitute(rowModule).using(replaceLibrary)
                         }
                     }
-//                    dss.all { ds ->
-//                        val dsreq = ds.requested
-//                        if(dsreq is DefaultModuleComponentSelector){
-//                            if(includeLibrary.containsLibrary(dsreq.group,dsreq.module)){
-//                                includeLibrary[dsreq.group]?.apply {
-//                                    val path1 = this.path
-//                                    this.modules[dsreq.module]?.apply {
-//                                        val path2 = this.path
-//                                        val project= dss.project(":$path1:$path2")
-//                                        val rowModule = dss.module("${dsreq.group}:${dsreq.module}")
-//                                        println("-------$rowModule \n     ------ $project")
-//                                        dss.substitute(rowModule).using(project)
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
                 }
             }
         }
