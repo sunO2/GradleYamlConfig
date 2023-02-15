@@ -9,6 +9,7 @@ import com.hezhihu89.module.IncludeModules
 import com.hezhihu89.task.MavenPublishingTask
 import com.hezhihu89.utils.VersionContain
 import com.hezhihu89.utils.YamlUtils
+import com.hezhihu89.utils.YamlUtils.getLibraryProjectPath
 import com.hezhihu89.utils.publishing
 import com.hezhihu89.utils.publishingConfig
 import org.gradle.api.*
@@ -108,18 +109,25 @@ class YamlConfigPlugin: Plugin<Project> {
 
 
     private fun Project.replaceModule2Library(app: App) {
-        afterEvaluate {
+        afterEvaluate { it ->
             val includeLibrary: Map<String,IncludeModules> = app.library
+            val dependencyModule: Map<String,String> = app.module
             it.configurations.all { cf ->
+                dependencyModule.forEach {
+                    cf.resolutionStrategy.force("${it.key}:${it.value}")
+                }
+
                 cf.resolutionStrategy.dependencySubstitution{ dss ->
                     includeLibrary.forEach{ libs ->
                         val group = libs.key
                         val modules = libs.value
                         modules.modules.forEach { mod ->
-                            val libmod = mod.key
-                            val rowModule = dss.module("$group:$libmod")
-                            val replaceLibrary = dss.project(":${modules.path}:$libmod")
-                            dss.substitute(rowModule).using(replaceLibrary)
+                            if(mod.value.include ?: modules.include){
+                                val libmod = mod.key
+                                val rowModule = dss.module("$group:$libmod")
+                                val replaceLibrary = dss.project(":${getLibraryProjectPath(modules.path,libmod)}")
+                                dss.substitute(rowModule).using(replaceLibrary)
+                            }
                         }
                     }
                 }

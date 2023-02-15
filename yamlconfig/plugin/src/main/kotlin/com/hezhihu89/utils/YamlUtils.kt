@@ -33,6 +33,29 @@ object YamlUtils {
         val file = rootProject.file("app.yaml")
         return getAppConfig(file)
     }
+
+
+    /***
+     * 获取library 路径
+     * :module:module1
+     */
+    fun getLibraryProjectPath(groupPath: String?,libraryPath: String): String{
+        if(null == groupPath || groupPath == "/"){//表示在根路径
+            return libraryPath
+        }
+        return "$groupPath:$libraryPath"
+    }
+
+    /***
+     * 获取library 文件夹资源 路径
+     * /Users/User/Project/modules/module1
+     */
+    fun getLibraryPath(groupPath: String?,libraryPath: String): String{
+        if(null == groupPath || groupPath == "/"){//表示在根路径
+            return libraryPath
+        }
+        return "$groupPath/$libraryPath"
+    }
 }
 
 object VersionContain {

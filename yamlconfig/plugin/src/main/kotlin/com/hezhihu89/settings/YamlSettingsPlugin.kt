@@ -5,6 +5,8 @@ import com.hezhihu89.module.IncludeModule
 import com.hezhihu89.module.IncludeModules
 import com.hezhihu89.utils.VersionContain
 import com.hezhihu89.utils.YamlUtils
+import com.hezhihu89.utils.YamlUtils.getLibraryPath
+import com.hezhihu89.utils.YamlUtils.getLibraryProjectPath
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.ProjectDescriptor
 import org.gradle.api.initialization.Settings
@@ -28,9 +30,10 @@ class YamlSettingsPlugin: Plugin<Settings> {
                 val moduleParams: IncludeModule = modules.value
                 if(moduleParams.include ?: groupModules.include) {
                     val module = modules.key
-                    val includeModuleProjectName = "$groupPath:$module"
+                    val includeModuleProjectName = getLibraryProjectPath(groupPath,module)
                     val projectDir =
-                        File(target.rootProject.projectDir, "/$groupPath/${moduleParams.path}")
+                        File(target.rootProject.projectDir, getLibraryPath(groupPath,moduleParams.path))
+                    println("${modules.key}---------- $projectDir")
                     target.include(includeModuleProjectName)
                     target.project(":$includeModuleProjectName").apply {
                         this.projectDir = projectDir

@@ -9,7 +9,7 @@ open class IncludeModule(val path: String = NOT_SET_DEFAULT,val version: String?
     }
 }
 
-open class IncludeModules(val path: String,
+open class IncludeModules(val path: String?,
                           val version: String,
                           val include: Boolean = false,
                           val modules: Map<String,IncludeModule>) {
