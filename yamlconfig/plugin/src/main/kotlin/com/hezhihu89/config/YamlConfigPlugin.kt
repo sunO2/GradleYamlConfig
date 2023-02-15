@@ -3,6 +3,7 @@
  */
 package com.hezhihu89.config
 
+import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.hezhihu89.module.APPConfig
 import com.hezhihu89.module.App
 import com.hezhihu89.module.IncludeModules
@@ -16,6 +17,8 @@ import org.gradle.api.*
 import org.gradle.api.publish.maven.MavenPublication
 import java.util.Properties
 
+fun Project.`android`(configure: Action<BaseAppModuleExtension>): Unit =
+    (this as org.gradle.api.plugins.ExtensionAware).extensions.configure("android", configure)
 
 /**
  * A simple 'hello world' plugin.
