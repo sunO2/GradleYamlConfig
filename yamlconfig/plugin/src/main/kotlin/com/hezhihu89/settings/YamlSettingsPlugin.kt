@@ -33,7 +33,6 @@ class YamlSettingsPlugin: Plugin<Settings> {
                     val includeModuleProjectName = getLibraryProjectPath(groupPath,module)
                     val projectDir =
                         File(target.rootProject.projectDir, getLibraryPath(groupPath,moduleParams.path))
-                    println("${modules.key}---------- $projectDir")
                     target.include(includeModuleProjectName)
                     target.project(":$includeModuleProjectName").apply {
                         this.projectDir = projectDir

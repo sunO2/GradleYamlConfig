@@ -4,18 +4,12 @@
 package com.hezhihu89.config
 
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
-import com.hezhihu89.module.APPConfig
+import com.hezhihu89.maven.ProjectMavenConfig
 import com.hezhihu89.module.App
 import com.hezhihu89.module.IncludeModules
-import com.hezhihu89.task.MavenPublishingTask
-import com.hezhihu89.utils.VersionContain
 import com.hezhihu89.utils.YamlUtils
 import com.hezhihu89.utils.YamlUtils.getLibraryProjectPath
-import com.hezhihu89.utils.publishing
-import com.hezhihu89.utils.publishingConfig
 import org.gradle.api.*
-import org.gradle.api.publish.maven.MavenPublication
-import java.util.Properties
 
 fun Project.`android`(configure: Action<BaseAppModuleExtension>): Unit =
     (this as org.gradle.api.plugins.ExtensionAware).extensions.configure("android", configure)
@@ -27,119 +21,19 @@ class YamlConfigPlugin: Plugin<Project> {
 
     override fun apply(project: Project) {
         // Register a task
-        val rootDir = project.rootProject.projectDir
         val appConfig: App = YamlUtils.getAppConfig(project)
-        appConfig.app.mApp = appConfig
-
-        project.extensions.add(App::class.java,"app",appConfig)
-        project.extensions.add(APPConfig::class.java,"appConfig",appConfig.app)
-
+        project.addAppConfigExtensions("app",appConfig)
+        project.addAppConfigExtensions("appConfig",appConfig.app)
 
         project.subprojects.forEach { subProject ->
-            subProject.addAppConfigExtensions(appConfig.app)
-            subProject.replaceModule2Library(appConfig)
-            subProject.addMavenPlugin()
+            subProject.addAppConfigExtensions("appConfig",appConfig.app)
+            ReplaceModule2Library.create(subProject).apply(appConfig)
+            ProjectMavenConfig.create(subProject).apply()
         }
     }
 
-    /***
-     * 配置 添加Maven 插件
-     */
-    private fun Project.addMavenPlugin(){
-        val versionPropertiesFile = file(VersionContain.LIBRARY_VERSION_FILE)
-        if(!versionPropertiesFile.exists()){ return }
-        val inputStream = versionPropertiesFile.inputStream()
-        val versionProperties = Properties()
-        try {
-            versionProperties.load(inputStream)
-        }catch (e: Exception){
-            e.printStackTrace()
-            return
-        }finally {
-            inputStream.close()
-        }
-        apply {
-            it.plugin("maven-publish")
-            afterEvaluate {
-                it.publishing {
-                    singleVariant("debug"){
-                        withSourcesJar()
-                    }
-                    singleVariant("release"){
-                        withSourcesJar()
-                    }
-                }
-               afterEvaluate { pg ->
-                   pg.publishingConfig {
-                       it.repositories {
-                          it.maven {
-                              it.name = "appLocal"
-                              it.setUrl("${rootProject.projectDir}/localRepo")
-                          }
-                       }
-                       it.publications { contain ->
-                           val DEBUG = "debug"
-                           val RELEALSE = "release"
-
-                           val group = versionProperties.getProperty(VersionContain.LIBRARY_GROUP)
-                           val name = versionProperties.getProperty(VersionContain.LIBRARY_NAME)
-                           val version = versionProperties.getProperty(VersionContain.LIBRARY_VERSION)
-
-                           val release = contain.create(RELEALSE, MavenPublication::class.java){ mv ->
-                               afterEvaluate{
-                                   mv.from(components.findByName(RELEALSE))
-                               }
-                               mv.groupId = group
-                               mv.artifactId = name
-                               mv.version = version
-                           }
-                           val debug = contain.create(DEBUG, MavenPublication::class.java){ mv ->
-                               afterEvaluate{
-                                   mv.from(components.findByName(DEBUG))
-                               }
-                               mv.groupId = group
-                               mv.artifactId = name
-                               mv.version = "${version}-SNAPSHOT"
-                           }
-                       }
-                   }
-                   MavenPublishingTask.create(this)
-               }
-            }
-        }
-    }
-
-
-
-    private fun Project.replaceModule2Library(app: App) {
-        afterEvaluate { it ->
-            val includeLibrary: Map<String,IncludeModules> = app.library
-            val dependencyModule: Map<String,String> = app.module
-            it.configurations.all { cf ->
-                dependencyModule.forEach {
-                    cf.resolutionStrategy.force("${it.key}:${it.value}")
-                }
-
-                cf.resolutionStrategy.dependencySubstitution{ dss ->
-                    includeLibrary.forEach{ libs ->
-                        val group = libs.key
-                        val modules = libs.value
-                        modules.modules.forEach { mod ->
-                            if(mod.value.include ?: modules.include){
-                                val libmod = mod.key
-                                val rowModule = dss.module("$group:$libmod")
-                                val replaceLibrary = dss.project(":${getLibraryProjectPath(modules.path,libmod)}")
-                                dss.substitute(rowModule).using(replaceLibrary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun Project.addAppConfigExtensions(appConfig: APPConfig){
-        extensions.add(APPConfig::class.java, "appConfig", appConfig)
+    private fun Project.addAppConfigExtensions(name: String,appConfig: Any){
+        extensions.add(appConfig.javaClass, name, appConfig)
     }
 
 }
