@@ -3,12 +3,12 @@
  */
 package com.hezhihu89.config
 
+import com.android.build.gradle.AppExtension
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.hezhihu89.maven.ProjectMavenConfig
 import com.hezhihu89.module.App
-import com.hezhihu89.module.IncludeModules
+import com.hezhihu89.transform.ParamsInjectTransform
 import com.hezhihu89.utils.YamlUtils
-import com.hezhihu89.utils.YamlUtils.getLibraryProjectPath
 import org.gradle.api.*
 
 fun Project.`android`(configure: Action<BaseAppModuleExtension>): Unit =
@@ -29,6 +29,12 @@ class YamlConfigPlugin: Plugin<Project> {
             subProject.addAppConfigExtensions("appConfig",appConfig.app)
             ReplaceModule2Library.create(subProject).apply(appConfig)
             ProjectMavenConfig.create(subProject).apply()
+            if(subProject.name == "app"){
+                subProject.afterEvaluate {
+                    val app = subProject.extensions.getByType(AppExtension::class.java)
+                    app.registerTransform(ParamsInjectTransform("2",subProject,appConfig))
+                }
+            }
         }
     }
 

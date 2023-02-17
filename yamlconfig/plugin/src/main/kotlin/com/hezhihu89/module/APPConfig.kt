@@ -21,6 +21,7 @@ open class APPConfig(val appName: String,
  * 应用模块
  */
 open class App(val app: APPConfig,
+               val injectParams: Map<String,String>,
                val module: Map<String,String>,
                val library: Map<String,IncludeModules>) {
 

@@ -1,6 +1,3 @@
-import com.android.build.gradle.internal.scope.ProjectInfo.Companion.getBaseName
-import com.hezhihu89.module.APPConfig
-
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
